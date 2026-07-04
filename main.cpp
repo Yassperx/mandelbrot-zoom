@@ -39,11 +39,11 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
 }
 
 /* This function runs once per frame, and is the heart of the program. */
-float xx = -2.5, xy = 1.0, yx = -1.5, yy = 1.5;
-int good(float x, float y) {
-    float zx = 0., zy = 0.;
+long double xx = -2.5, xy = 1.0, yx = -1.5, yy = 1.5;
+int good(long double x, long double y) {
+    long double zx = 0., zy = 0.;
     for(int j = 0 ; j < iters_n ; j++) {
-        float zzx = zx;
+        long double zzx = zx;
         zx = zx*zx - zy*zy + x;
         zy = 2*zzx*zy + y;
         if(zx*zx + zy*zy > 4.) return j;
@@ -58,31 +58,52 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     SDL_RenderClear(renderer);  /* start with a blank canvas. */
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);  /* white, full alpha */
 
+    // guassian blur.
+    int gsb[WINDOW_WIDTH][WINDOW_HEIGHT][3];
+    memset(gsb, 0, sizeof gsb);
     for(int k = 0 ; k < WINDOW_WIDTH ; k++) {
         for(int j = 0 ; j < WINDOW_HEIGHT ; j++) {
-            float x = xx + ((k+1)*(xy-xx))/WINDOW_WIDTH;
-            float y = yx + ((j+1)*(yy-yx))/WINDOW_HEIGHT;
+            long double x = xx + ((k+1)*(xy-xx))/WINDOW_WIDTH;
+            long double y = yx + ((j+1)*(yy-yx))/WINDOW_HEIGHT;
             // cout << yay << endl;
             int v = good(x, y);
             int r, g, b;
             if(v == -1) {
-                SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+                // SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
             }
 
             else {
                 v = (255*v)/iters_n;
-                SDL_SetRenderDrawColor(renderer, v, v, v, 255);
+                // SDL_SetRenderDrawColor(renderer, v, v, v, 255);
+                for(int q = 0 ; q < 3 ; q++) gsb[k][j][q] = v;
             }
 
+            // SDL_RenderPoint(renderer, (long double)k, (long double)j);
+        }
+    }
+
+    int stab = 6;
+    for(int k = 1 ; k < WINDOW_WIDTH-1 ; k++) {
+        for(int j = 1 ; j < WINDOW_HEIGHT-1 ; j++) {
+            for(int q = 0 ; q < 3 ; q++) {
+                gsb[k][j][q] = (stab*gsb[k][j][q]+gsb[k+1][j][q]+gsb[k-1][j][q]+gsb[k+1][j+1][q]+gsb[k-1][j+1][q]+gsb[k+1][j-1][q]+gsb[k-1][j-1][q]+gsb[k][j+1][q]+gsb[k][j-1][q])/(stab+8);
+            }
+
+            SDL_SetRenderDrawColor(renderer, gsb[k][j][0], gsb[k][j][1], gsb[k][j][2], 255);
             SDL_RenderPoint(renderer, (float)k, (float)j);
         }
     }
 
-    xx = (xx*999 + xy)/1000;
-    xy = (xy*999 + xx)/1000;
-    yx = (yx*999 + yy)/1000;
-    yy = (yy*999 + yx)/1000;
+    // xx = (xx*999 + xy)/1000;
+    // xy = (xy*999 + xx)/1000;
+    // yx = (yx*999 + yy)/1000;
+    // yy = (yy*999 + yx)/1000;
     
+    xx = zom_ptx + (xx - zom_ptx) * 0.99f;
+    xy = zom_ptx + (xy - zom_ptx) * 0.99f;
+    yx = zom_pty + (yx - zom_pty) * 0.99f;
+    yy = zom_pty + (yy - zom_pty) * 0.99f;
+
     SDL_RenderPresent(renderer);
     return SDL_APP_CONTINUE;
 }
