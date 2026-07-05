@@ -85,15 +85,6 @@ int main()
         int afterGaussian[WINDOW_WIDTH][WINDOW_HEIGHT][3] = {};
         gaussianBlur(afterGaussian,beforeGaussian);
         renderImage(afterGaussian,window);
-
-        sf::Texture texture(window.getSize());
-        texture.update(window);
-        if (texture.copyToImage().saveToFile(std::format("Frame {}.png", frame)))
-        {
-        }
-        else {
-            throw std::runtime_error("Failed to save frame");
-        }
         frame++;
         zoomIn(0.9);
         window.display();
