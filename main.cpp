@@ -9,9 +9,7 @@ static SDL_Window *window = NULL;
 static SDL_Renderer *renderer = NULL;
 
 // 7/6 ratio
-#define WINDOW_WIDTH 350
-#define WINDOW_HEIGHT 300
-int iters_n = 35;
+int iters_n = 30;
 
 /* This function runs once at startup. */
 static Uint64 strt = 0;
@@ -57,16 +55,16 @@ int good(long double x, long double y) {
     return -1;
 }
 
-int gsb[WINDOW_WIDTH][WINDOW_HEIGHT][3];
+int gsb[WINDOW_WIDTH * WINDOW_HEIGHT];
 int l = 0;
 SDL_AppResult SDL_AppIterate(void *appstate) {
     Uint64 curt = SDL_GetTicks() - strt;
-    if(curt/3000 != l) {
-        l = curt/3000;
+    if(curt/5000 != l) {
+        l = curt/5000;
         iters_n++;
     }
 
-    cout << curt << endl;
+    // cout << curt << endl;
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);  /* black, full alpha */
     SDL_RenderClear(renderer);  /* start with a blank canvas. */
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);  /* white, full alpha */
@@ -89,27 +87,40 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
                 float r = yo*yo*yo, g = yo*yo, b = yo;
                 // SDL_SetRenderDrawColor(renderer, v, v, v, 255);
                 // for(int q = 0 ; q < 3 ; q++) gsb[k][j][q] = v;
-                gsb[k][j][0] = (int)(255*r);
-                gsb[k][j][1] = (int)(255*g);
-                gsb[k][j][2] = (int)(255*b);
+                uint8_t rr = (uint8_t)(255*r);
+                uint8_t gg = (uint8_t)(255*g);
+                uint8_t bb = (uint8_t)(255*b);
+                gsb[j*WINDOW_WIDTH + k] = 0xFF000000 | (rr << 16) | (gg << 8) | bb;
             }
 
             // SDL_RenderPoint(renderer, (long double)k, (long double)j);
         }
     }
 
-    int stab = 30;
-    for(int k = 1 ; k < WINDOW_WIDTH-1 ; k++) {
-        for(int j = 1 ; j < WINDOW_HEIGHT-1 ; j++) {
-            int rr[3];
-            for(int q = 0 ; q < 3 ; q++) {
-                rr[q] = (stab*gsb[k][j][q]+gsb[k+1][j][q]+gsb[k-1][j][q]+gsb[k+1][j+1][q]+gsb[k-1][j+1][q]+gsb[k+1][j-1][q]+gsb[k-1][j-1][q]+gsb[k][j+1][q]+gsb[k][j-1][q])/(stab+8);
-            }
+    // int stab = 500;
+    // for(int k = 1 ; k < WINDOW_WIDTH-1 ; k++) {
+    //     for(int j = 1 ; j < WINDOW_HEIGHT-1 ; j++) {
+    //         int rr[3];
+    //         for(int q = 0 ; q < 3 ; q++) {
+    //             rr[q] = (stab*gsb[k][j][q]+gsb[k+1][j][q]+gsb[k-1][j][q]+gsb[k+1][j+1][q]+gsb[k-1][j+1][q]+gsb[k+1][j-1][q]+gsb[k-1][j-1][q]+gsb[k][j+1][q]+gsb[k][j-1][q])/(stab+8);
+    //         }
 
-            SDL_SetRenderDrawColor(renderer, rr[0], rr[1], rr[2], 255);
-            SDL_RenderPoint(renderer, (float)k, (float)j);
-        }
-    }
+    //         SDL_SetRenderDrawColor(renderer, rr[0], rr[1], rr[2], 255);
+    //         SDL_RenderPoint(renderer, (float)k, (float)j);
+    //     }
+    // }
+
+    // chunk render.
+    SDL_Texture *texture = SDL_CreateTexture(
+        renderer,
+        SDL_PIXELFORMAT_ARGB8888,
+        SDL_TEXTUREACCESS_STREAMING,
+        WINDOW_WIDTH,
+        WINDOW_HEIGHT
+    );
+
+    SDL_UpdateTexture(texture, NULL, gsb, WINDOW_WIDTH * sizeof(uint32_t));
+    SDL_RenderTexture(renderer, texture, NULL, NULL);
 
     // xx = (xx*999 + xy)/1000;
     // xy = (xy*999 + xx)/1000;
