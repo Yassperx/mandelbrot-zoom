@@ -1,0 +1,2 @@
+- [X] zooming at a point
+- [ ] prettier colors

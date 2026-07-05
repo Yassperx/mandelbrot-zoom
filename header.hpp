@@ -5,4 +5,4 @@ using namespace std;
 // choose one from https://mandelbrot.site/
 const long double zom_ptx = 0;
 const long double zom_pty = 1;
-const int iters_n = 50;
+const int iters_n = 35;

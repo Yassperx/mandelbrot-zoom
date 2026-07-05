@@ -8,10 +8,11 @@
 static SDL_Window *window = NULL;
 static SDL_Renderer *renderer = NULL;
 
-#define WINDOW_WIDTH 640
-#define WINDOW_HEIGHT 480
+#define WINDOW_WIDTH 350
+#define WINDOW_HEIGHT 300
 
 /* This function runs once at startup. */
+static Uint64 strt = 0;
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
 
     SDL_SetAppMetadata("Mandelbrot zoom", "1.0", "com.example.brh");
@@ -24,6 +25,8 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char *argv[]) {
         SDL_Log("Couldn't create window: %s", SDL_GetError());
         return SDL_APP_FAILURE;
     }
+
+    strt = SDL_GetTicks();
 
     SDL_SetRenderLogicalPresentation(renderer, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_LOGICAL_PRESENTATION_LETTERBOX);
     return SDL_APP_CONTINUE;
@@ -46,20 +49,21 @@ int good(long double x, long double y) {
         long double zzx = zx;
         zx = zx*zx - zy*zy + x;
         zy = 2*zzx*zy + y;
-        if(zx*zx + zy*zy > 4.) return j;
+        if(zx*zx + zy*zy > 25.) return j;
     }
 
     return -1;
 }
 
+int gsb[WINDOW_WIDTH][WINDOW_HEIGHT][3];
 SDL_AppResult SDL_AppIterate(void *appstate) {
-
+    Uint64 curt = SDL_GetTicks() - strt;
+    cout << curt << endl;
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, SDL_ALPHA_OPAQUE);  /* black, full alpha */
     SDL_RenderClear(renderer);  /* start with a blank canvas. */
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, SDL_ALPHA_OPAQUE);  /* white, full alpha */
 
     // guassian blur.
-    int gsb[WINDOW_WIDTH][WINDOW_HEIGHT][3];
     memset(gsb, 0, sizeof gsb);
     for(int k = 0 ; k < WINDOW_WIDTH ; k++) {
         for(int j = 0 ; j < WINDOW_HEIGHT ; j++) {
@@ -73,23 +77,28 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             }
 
             else {
-                v = (255*v)/iters_n;
+                float yo = (float)v/iters_n;
+                float r = yo*yo*yo, g = yo*yo, b = yo;
                 // SDL_SetRenderDrawColor(renderer, v, v, v, 255);
-                for(int q = 0 ; q < 3 ; q++) gsb[k][j][q] = v;
+                // for(int q = 0 ; q < 3 ; q++) gsb[k][j][q] = v;
+                gsb[k][j][0] = (int)(255*r);
+                gsb[k][j][1] = (int)(255*g);
+                gsb[k][j][2] = (int)(255*b);
             }
 
             // SDL_RenderPoint(renderer, (long double)k, (long double)j);
         }
     }
 
-    int stab = 6;
+    int stab = 30;
     for(int k = 1 ; k < WINDOW_WIDTH-1 ; k++) {
         for(int j = 1 ; j < WINDOW_HEIGHT-1 ; j++) {
+            int rr[3];
             for(int q = 0 ; q < 3 ; q++) {
-                gsb[k][j][q] = (stab*gsb[k][j][q]+gsb[k+1][j][q]+gsb[k-1][j][q]+gsb[k+1][j+1][q]+gsb[k-1][j+1][q]+gsb[k+1][j-1][q]+gsb[k-1][j-1][q]+gsb[k][j+1][q]+gsb[k][j-1][q])/(stab+8);
+                rr[q] = (stab*gsb[k][j][q]+gsb[k+1][j][q]+gsb[k-1][j][q]+gsb[k+1][j+1][q]+gsb[k-1][j+1][q]+gsb[k+1][j-1][q]+gsb[k-1][j-1][q]+gsb[k][j+1][q]+gsb[k][j-1][q])/(stab+8);
             }
 
-            SDL_SetRenderDrawColor(renderer, gsb[k][j][0], gsb[k][j][1], gsb[k][j][2], 255);
+            SDL_SetRenderDrawColor(renderer, rr[0], rr[1], rr[2], 255);
             SDL_RenderPoint(renderer, (float)k, (float)j);
         }
     }
