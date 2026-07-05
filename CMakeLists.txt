@@ -13,7 +13,12 @@ FetchContent_Declare(SFML
 FetchContent_MakeAvailable(SFML)
 
 add_executable(main src/main.cpp src/header.hpp)
-set_target_properties(main PROPERTIES LINK_FLAGS -Wl,--stack=268435456)
+
+if(WIN32)
+    target_link_options(main PRIVATE -Wl,--stack=268435456)
+else()
+    set_target_properties(main PROPERTIES LINK_FLAGS -Wl,-z,stack-size=268435456)
+endif ()
 target_compile_features(main PRIVATE cxx_std_23)
 target_link_libraries(main PRIVATE SFML::Graphics)
 
