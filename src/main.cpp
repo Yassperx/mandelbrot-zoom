@@ -73,7 +73,7 @@ sf::Color colorMap(int j, Config const& cfg) {
     return color;
 }
 
-sf::Color lerp(const sf::Color& a, const sf::Color& b, float p)
+sf::Color weightedColorAverage(const sf::Color& a, const sf::Color& b, float p)
 {
     return sf::Color(
         (1.0f - p) * a.r + p * b.r,
@@ -82,9 +82,9 @@ sf::Color lerp(const sf::Color& a, const sf::Color& b, float p)
     );
 }
 
-sf::Color colorMapSmart(int j, Config const& cfg){
-  float t = 15.0 * static_cast<float>(j)/cfg.iters_n;
-  if (j < cfg.iters_n && j > 0)
+sf::Color colorMapSmart(float j, Config const& cfg){
+  long double t = 15.0 * j/cfg.iters_n;
+  if (j < cfg.iters_n)
   {
       sf::Color mapping[16];
       mapping[0] = sf::Color(66, 30, 15);
@@ -105,10 +105,10 @@ sf::Color colorMapSmart(int j, Config const& cfg){
       mapping[15] = sf::Color(106, 52, 3);
       int k = floor(t);
       if (k == 15) return mapping[15];
-      float p = t - k;
-      return lerp(mapping[k], mapping[k+1], p);
+      long double p = t - k;
+      return weightedColorAverage(mapping[k], mapping[k+1], p);
   }
-  else return sf::Color::Black;
+    return sf::Color::Black;
 }
 
 sf::Color getColor(long double x, long double y, Config const &cfg) {
@@ -128,7 +128,7 @@ sf::Color getColor(long double x, long double y, Config const &cfg) {
 sf::Color getColorFancy(long double x, long double y, Config const &cfg) {
     long double zx = 0., zy = 0.;
     long double zx2 = 0, zy2 = 0;
-    float j = 0;
+    long double j = 0;
     for (; j < cfg.iters_n; j++) {
         zx2 = zx * zx;
         zy2 = zy * zy;
@@ -137,8 +137,8 @@ sf::Color getColorFancy(long double x, long double y, Config const &cfg) {
         if (zx2 + zy2 > 1e5) break;
     }
     if (j < cfg.iters_n) {
-        float log_zn = log2f(zx2 + zy2) / 2;
-        j += 1 - log2f(log_zn);
+        long double log_zn = log2l(zx2 + zy2) / 2;
+        j += 1 - log2l(log_zn);
     }
     return colorMapSmart(j, cfg);
 }
@@ -163,25 +163,6 @@ void getRawImage(int arr[WINDOW_WIDTH][WINDOW_HEIGHT][3], Config const &cfg) {
     }
 }
 
-
-[[deprecated("AA does the job better now")]] void gaussianBlur(int result[WINDOW_WIDTH][WINDOW_HEIGHT][3],
-                                                               int original[WINDOW_WIDTH][WINDOW_HEIGHT][3]) {
-    const int stab = 6;
-    for (int k = 0; k < WINDOW_WIDTH; k++) {
-        for (int j = 0; j < WINDOW_HEIGHT; j++) {
-            for (int q = 0; q < 3; q++) {
-                if (k == 0 || j == 0 || k == WINDOW_WIDTH - 1 || j == WINDOW_HEIGHT - 1) {
-                    result[k][j][q] = original[k][j][q];
-                }
-                result[k][j][q] = (stab * original[k][j][q] + original[k + 1][j][q] + original[k - 1][j][q] + original[
-                                       k + 1][j + 1][q] + original[k - 1][j + 1][q] + original[k + 1][j - 1][q] +
-                                   original[k - 1][j - 1][q] + original[k][j + 1][q] + original[k][j - 1][q]) / (
-                                      stab + 8);
-                // to improve but this works now sadly
-            }
-        }
-    }
-}
 
 void renderImage(int image[WINDOW_WIDTH][WINDOW_HEIGHT][3], sf::RenderWindow &window) {
     sf::VertexArray toDraw(sf::PrimitiveType::Points, WINDOW_HEIGHT * WINDOW_WIDTH);
