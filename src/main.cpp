@@ -1,6 +1,5 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
-// #include "header.hpp"
 #include "SimpleIni.h"
 
 struct Config {
@@ -15,6 +14,7 @@ struct Config {
 };
 
 Config getConfig(){
+    using std::stold;
   Config cfg, base_cfg;
   CSimpleIniA ini;
 	SI_Error rc = ini.LoadFile("../config.ini");
@@ -24,14 +24,14 @@ Config getConfig(){
     return base_cfg;
   };
 
-  cfg.zoom_ptx    = std::stold(ini.GetValue("mandelbrot", "zoom_ptx", "-1"));
-  cfg.zoom_pty    = std::stold(ini.GetValue("mandelbrot", "zoom_pty", "-1"));
-  cfg.start_xx    = std::stold(ini.GetValue("mandelbrot", "start_xx", "-1"));
-  cfg.start_xy    = std::stold(ini.GetValue("mandelbrot", "start_xy", "-1"));
-  cfg.start_yx    = std::stold(ini.GetValue("mandelbrot", "start_yx", "-1"));
-  cfg.start_yy    = std::stold(ini.GetValue("mandelbrot", "start_yy", "-1"));
-  cfg.coefficient = std::stold(ini.GetValue("mandelbrot", "coefficient", "-1"));
-  cfg.iters_n     = std::stold(ini.GetValue("mandelbrot", "iters_n", "-1"));
+  cfg.zoom_ptx    = stold(ini.GetValue("mandelbrot", "zoom_ptx", "-1"));
+  cfg.zoom_pty    = stold(ini.GetValue("mandelbrot", "zoom_pty", "-1"));
+  cfg.start_xx    = stold(ini.GetValue("mandelbrot", "start_xx", "-1"));
+  cfg.start_xy    = stold(ini.GetValue("mandelbrot", "start_xy", "-1"));
+  cfg.start_yx    = stold(ini.GetValue("mandelbrot", "start_yx", "-1"));
+  cfg.start_yy    = stold(ini.GetValue("mandelbrot", "start_yy", "-1"));
+  cfg.coefficient = stold(ini.GetValue("mandelbrot", "coefficient", "-1"));
+  cfg.iters_n     = stold(ini.GetValue("mandelbrot", "iters_n", "-1"));
   bool bad = cfg.zoom_ptx == -1
     or cfg.zoom_pty == -1
     or cfg.start_xx == -1
@@ -55,12 +55,14 @@ long double xx, xy, yx, yy; // = -2.5, xy = 1.0, yx = -1.5, yy = 1.5; // i lwk d
 
 sf::Color getColor(long double x, long double y, Config cfg) {
     long double zx = 0., zy = 0.;
+    long double zx2 =0, zy2=0;
     int j = 0;
     for(; j < cfg.iters_n ; j++) {
-        long double zzx = zx;
-        zx = zx*zx - zy*zy + x;
-        zy = 2*zzx*zy + y;
-        if(zx*zx + zy*zy > 4) break;
+        zx2=zx*zx;
+        zy2=zy*zy;
+        zy=2*zx*zy+y;
+        zx=zx2-zy2+x;
+        if(zx2 + zy2 > 4) break;
     }
     float scale = 1.0 - static_cast<float>(j)/static_cast<float>(cfg.iters_n);
     float r = scale * scale * scale, g = scale * scale, b = scale;
